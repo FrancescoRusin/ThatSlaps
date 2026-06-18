@@ -3,10 +3,11 @@ import time
 from enum import Enum, auto
 import sdl2
 import sdl2.ext
+import sdl2.sdlttf
 
 SCREEN_W: int = 1920
 SCREEN_H: int = 1080
-FRAMERATE: int = 60
+FRAMERATE: int = 30
 MAX_TRIALS: int = 20
 LOAD_TIME: int = 30
 CHOICE_SECONDS: int = 3
@@ -18,19 +19,21 @@ class Mode(Enum):
     CONSEQUENCE = auto()
 
 
-def draw_rect(renderer, center, w, h, color):
-    rect = sdl2.SDL_Rect(center[0] - int(w / 2), center[1] - int(h / 2), w, h)
-    renderer.fill(rect, color=color)
+class Target(Enum):
+    UGLY = auto()
+    CUTE = auto()
+    DANGER = auto()
 
 
-def draw_circle(renderer, center, radius, color, thickness):
-    renderer.color = color
-    for tick in range(0, thickness):
-        for angle in range(0, 360):
-            rad = math.radians(angle)
-            x = int(center[0] + (radius + tick) * math.cos(rad))
-            y = int(center[1] + (radius + tick) * math.sin(rad))
-            renderer.draw_point([x, y])
+class Action(Enum):
+    SLAP_LEFT = auto()
+    SLAP_RIGHT = auto()
+    PET = auto()
+    NOTHING = auto()
+
+
+def detect_action():
+    pass
 
 
 def should_close() -> bool:
@@ -44,3 +47,11 @@ def should_close() -> bool:
 
 def time_int() -> int:
     return time.time_ns() // int(1e6)
+
+
+def update_time_texture(renderer, texture, font, time_displayed, color):
+    sdl2.SDL_DestroyTexture(texture)
+    text_surface = sdl2.sdlttf.TTF_RenderUTF8_Blended(font, f"{time_displayed}".encode("utf-8"), color)
+    new_texture = sdl2.SDL_CreateTextureFromSurface(renderer.sdlrenderer, text_surface)
+    sdl2.SDL_FreeSurface(text_surface)
+    return new_texture
