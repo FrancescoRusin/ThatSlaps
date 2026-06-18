@@ -82,12 +82,16 @@ if __name__ == "__main__":
         (factory.from_image("images/duck_good.png"), factory.from_image("images/duck_silhouette.png"), Target.CUTE),
         (factory.from_image("images/Doge.png"), factory.from_image("images/Doge.png"), Target.DANGER)
     ]
-    current_sprite, current_bg_sprite, current_target = random.choice(sprites)
-    bg_positions: list[tuple[int, int]] = [(200, 200), (400, 200), (600, 200)]
-    cute_sprites: list = []
     for s1, s2, t in sprites:
         sdl2.SDL_SetTextureBlendMode(s1.texture, sdl2.SDL_BLENDMODE_BLEND)
         sdl2.SDL_SetTextureBlendMode(s2.texture, sdl2.SDL_BLENDMODE_BLEND)
+    current_sprite, current_bg_sprite, current_target = random.choice(sprites)
+    bg_positions: list = [
+        sdl2.SDL_Rect(200, 200, 200, 200),
+        sdl2.SDL_Rect(400, 200, 200, 200),
+        sdl2.SDL_Rect(600, 200, 200, 200)
+    ]
+    cute_sprites: list = []
     start_time: int = time_int()
     while running and trials < MAX_TRIALS:
         renderer.color = red
@@ -107,7 +111,6 @@ if __name__ == "__main__":
                 manual_choice = Action.SLAP_LEFT
             if event.key.keysym.sym == sdl2.SDLK_d:
                 manual_choice = Action.SLAP_RIGHT
-                start_time = time_int()
 
         success, image = webcam.read()
         if not success:
@@ -118,10 +121,15 @@ if __name__ == "__main__":
         timestamp = time_int()
         if (timestamp - start_time) >= 1000 or game_mode != Mode.CONSEQUENCE or chosen_action == Action.NOTHING or current_target != Target.DANGER:
             sdl2.SDL_SetTextureAlphaMod(sprite_background.texture, 255)
-            sdl2.SDL_RenderCopy(renderer.sdlrenderer, sprite_background.texture, None, background_rect)
+            for cute_sprite in cute_sprites:
+                sdl2.SDL_SetTextureAlphaMod(cute_sprite.texture, 255)
         else:
-            sdl2.SDL_SetTextureAlphaMod(sprite_background.texture, int(255 * (.5 + abs(.3 - (timestamp - start_time) / 1000))))
-            sdl2.SDL_RenderCopy(renderer.sdlrenderer, sprite_background.texture, None, background_rect)
+            sdl2.SDL_SetTextureAlphaMod(sprite_background.texture, int(255 * (.3 + abs(.3 - (timestamp - start_time) / 1000))))
+            for cute_sprite in cute_sprites:
+                sdl2.SDL_SetTextureAlphaMod(cute_sprite.texture, int(255 * (.3 + abs(.3 - (timestamp - start_time) / 1000))))
+        #sdl2.SDL_RenderCopy(renderer.sdlrenderer, sprite_background.texture, None, background_rect)
+        for i in range(len(cute_sprites)):
+            sdl2.SDL_RenderCopy(renderer.sdlrenderer, cute_sprites[i].texture, None, bg_positions[i])
         sdl2.SDL_UpdateTexture(webcam_texture, None, image_rgb.ctypes.data, width * 3)
         sdl2.SDL_RenderCopy(renderer.sdlrenderer, webcam_texture, None, webcam_rect)
         if game_mode == Mode.LOAD:
@@ -167,6 +175,8 @@ if __name__ == "__main__":
             if timestamp - start_time >= 1000:
                 if current_target == Target.CUTE and chosen_action == Action.PET:
                     cute_sprites.append(current_bg_sprite)
+                if current_target == Target.UGLY and chosen_action != Action.SLAP_RIGHT and chosen_action != Action.SLAP_LEFT and len(cute_sprites) > 0:
+                    cute_sprites.pop(len(cute_sprites) - 1)
                 start_time = timestamp
                 current_sprite, current_bg_sprite, current_target = random.choice(sprites)
                 game_mode = Mode.LOAD
@@ -174,7 +184,13 @@ if __name__ == "__main__":
                 trials += 1
             else:
                 percentage: float = (timestamp - start_time) / 1000
-                if chosen_action == Action.NOTHING:
+                if current_target == Target.UGLY and (chosen_action == Action.NOTHING or chosen_action == Action.PET):
+                    if len(cute_sprites) > 0:
+                        sdl2.SDL_SetTextureAlphaMod(current_bg_sprite, 255 - int(255 * percentage))
+                        last_cute_bg_rect = bg_positions[len(cute_sprites) - 1]
+                        current_rect = sdl2.SDL_Rect(last_cute_bg_rect.x - 50, last_cute_bg_rect.y, last_cute_bg_rect.w, last_cute_bg_rect.h)
+                        sdl2.SDL_RenderCopy(renderer.sdlrenderer, current_bg_sprite.texture, None, last_cute_bg_rect)
+                elif chosen_action == Action.NOTHING:
                     sdl2.SDL_SetTextureAlphaMod(current_sprite, int(255 * percentage))
                     sdl2.SDL_RenderCopy(renderer.sdlrenderer, current_sprite.texture, None, image_rect)
                 elif chosen_action == Action.PET:
@@ -185,8 +201,7 @@ if __name__ == "__main__":
                             image_rect.w,
                             image_rect.h
                         )
-                    elif current_target == Target.UGLY:
-                        pass  #TODO UGLY EATS CAT ANIMATION
+                    #pain with the dangerous targets is dealt with in the other screen; ugly targets are dealt with in the first if
                 elif chosen_action == Action.SLAP_LEFT:
                     current_rect = sdl2.SDL_Rect(
                         int((-SCREEN_W / 3 - image_rect.w / 2) * percentage + image_rect.x * (1 - percentage)),
