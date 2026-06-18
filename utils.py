@@ -1,4 +1,3 @@
-import math
 import time
 from enum import Enum, auto
 import sdl2
@@ -9,7 +8,6 @@ SCREEN_W: int = 1920
 SCREEN_H: int = 1080
 FRAMERATE: int = 30
 MAX_TRIALS: int = 20
-LOAD_TIME: int = 30
 CHOICE_SECONDS: int = 3
 
 
