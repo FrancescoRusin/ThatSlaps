@@ -62,7 +62,7 @@ class SlapTracker:
             if all([x >= .55 for x in centers_x[:10]]) and all([x <= .45 for x in centers_x[10:]]):
                 return Action.SLAP_LEFT
         elif numpy.std(centers_x) < 0.1:
-            if all([y <= .5 for y in centers_y[:10]]) and all([y >= .5 for y in centers_y[10:]]):
+            if all([y <= .45 for y in centers_y[:10]]) and all([y >= .55 for y in centers_y[10:]]):
                 return Action.PET
         return Action.NOTHING
 
