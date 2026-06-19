@@ -1,4 +1,4 @@
-"""Headless gesture-recognition API (slap / pet / neutral).
+"""Headless gesture-recognition API (slap left/right / pet / neutral).
 
 Geometric hand-movement classification plus two ways to drive it without any UI:
 
@@ -9,16 +9,17 @@ Geometric hand-movement classification plus two ways to drive it without any UI:
 
 The gesture is decided geometrically from the hand bounding boxes (no VLM):
 
-    slap    = horizontal movement of at least one hand
-    pet     = vertical   movement of at least one hand
-    neutral = slight or no movement in either hand
+    slap_left  = horizontal movement toward the left of the frame
+    slap_right = horizontal movement toward the right of the frame
+    pet        = vertical movement of at least one hand
+    neutral    = slight or no movement in either hand
 
 Hand boxes come from the offline detectors in :mod:`src.Detectors`.
 """
 
 import time
 import statistics
-from collections import deque
+from collections import deque, namedtuple
 
 import numpy as np
 import cv2
@@ -26,10 +27,22 @@ import cv2
 from src.Detectors import make_detector
 
 # --- Gesture labels ---
-SLAP = "slap"        # horizontal movement
-PET = "pet"          # vertical movement
-NEUTRAL = "neutral"  # little / no movement
-STALL = "stall"      # (GestureStream) buffer not full yet; keep feeding frames
+# Horizontal movement is split by direction (in image coordinates, x grows to the
+# right of the frame), matching Utils.Action: rightward -> SLAP_RIGHT.
+SLAP_LEFT = "slap_left"      # horizontal movement toward the left of the frame
+SLAP_RIGHT = "slap_right"    # horizontal movement toward the right of the frame
+PET = "pet"                  # vertical movement
+NEUTRAL = "neutral"          # little / no movement
+STALL = "stall"            # (GestureStream) buffer not full yet; keep feeding frames
+
+# Convenience: both slap directions, for callers that only care "was it a slap?".
+SLAPS = frozenset({SLAP_LEFT, SLAP_RIGHT})
+
+# What GestureStream.push returns each call: the rolling-window decision plus the
+# detections found in the frame just pushed. `detections` is a list (possibly
+# empty) of dicts {"bbox": (x1, y1, x2, y2), "center": (cx, cy), "label", "score"}
+# in pixel coordinates -- so result.detections[i]["bbox"] is a hand's box.
+GestureResult = namedtuple("GestureResult", ["decision", "detections"])
 
 # --- Capture / bundling ---
 DETECTOR_BACKEND = "mediapipe"        # default detector backend
@@ -110,17 +123,22 @@ def _build_tracks(per_frame_detections):
 
 
 def classify_from_detections(per_frame_detections):
-    """Decide slap / pet / neutral from already-detected per-frame boxes.
+    """Decide slap_left / slap_right / pet / neutral from per-frame boxes.
 
     A gesture is a clear sweep of a hand across the view along its dominant axis
     (>= MOVE_THRESHOLD hand-widths). Short tracks are kept, so a quick movement
     spanning only a few frames still counts; small jitter -- which never covers
     that distance -- stays neutral.
+
+    Horizontal sweeps are split by direction: the side (min or max x) the hand
+    reaches *later* in time is where it ended up, so reaching max x last means it
+    moved right (SLAP_RIGHT) and reaching min x last means it moved left
+    (SLAP_LEFT). Vertical sweeps return PET.
     """
     if not per_frame_detections:
         return NEUTRAL
 
-    best_sweep, best_axis = 0.0, None
+    best_sweep, best_label = 0.0, None
 
     for track in _build_tracks(per_frame_detections):
         if len(track) < MIN_TRACK_FRAMES:
@@ -139,19 +157,25 @@ def classify_from_detections(per_frame_detections):
         vals = xs if horizontal else ys
 
         sweep = (max(vals) - min(vals)) / scale
-        if sweep > best_sweep:
-            best_sweep, best_axis = sweep, ("h" if horizontal else "v")
+        if sweep <= best_sweep:
+            continue
+        best_sweep = sweep
+        if horizontal:
+            rightward = vals.index(max(vals)) > vals.index(min(vals))
+            best_label = SLAP_RIGHT if rightward else SLAP_LEFT
+        else:
+            best_label = PET
 
-    if best_axis is None or best_sweep < MOVE_THRESHOLD:
+    if best_label is None or best_sweep < MOVE_THRESHOLD:
         return NEUTRAL
-    return SLAP if best_axis == "h" else PET
+    return best_label
 
 
 def classify_movement(frames, detector):
-    """Classify a bundle of frames as slap / pet / neutral.
+    """Classify a bundle of frames as slap_left / slap_right / pet / neutral.
 
     Runs the detector on each frame, tracks the hand boxes, and returns one of
-    the three labels.
+    the labels.
     """
     per_frame_detections = [detector.detect(f) for f in frames]
     return classify_from_detections(per_frame_detections)
@@ -167,7 +191,8 @@ def detect_gesture(detector=None, backend=DETECTOR_BACKEND, weights=None,
 
     Fully headless: opens the camera, samples ``num_frames`` frames at ``fps``,
     runs the hand detector on each, classifies the movement, and returns one of
-    ``SLAP`` / ``PET`` / ``NEUTRAL``. No window is shown and no keys are read.
+    ``SLAP_LEFT`` / ``SLAP_RIGHT`` / ``PET`` / ``NEUTRAL``. No window is shown and
+    no keys are read.
 
     Pass a pre-built ``detector`` to reuse it across calls (avoids reloading the
     model each time); otherwise one is created from ``backend`` / ``weights`` /
@@ -222,11 +247,13 @@ class GestureStream:
     :meth:`push`. Each pushed frame is run through the detector once and its
     detections are cached in a rolling buffer of the last ``window`` frames.
 
-    Every call returns a decision based on the buffered window:
+    Every :meth:`push` returns a :class:`GestureResult` ``(decision, detections)``
+    where ``detections`` are the hand boxes found in that very frame and
+    ``decision`` is based on the buffered window:
 
         * ``STALL``   - fewer than ``window`` frames buffered so far; keep going.
-        * otherwise   - one of ``SLAP`` / ``PET`` / ``NEUTRAL`` for the last
-                         ``window`` frames.
+        * otherwise   - one of ``SLAP_LEFT`` / ``SLAP_RIGHT`` / ``PET`` /
+                         ``NEUTRAL`` for the last ``window`` frames.
 
     Pass a pre-built ``detector`` to reuse it, or let one be created from
     ``backend`` / ``weights`` / ``mp_model`` (closed by :meth:`close` only if
@@ -245,16 +272,24 @@ class GestureStream:
         self._buffer = deque(maxlen=window)
 
     def push(self, image):
-        """Add one BGR frame and return the current decision.
+        """Add one BGR frame and return a :class:`GestureResult`.
 
-        Returns ``STALL`` until ``window`` frames have been buffered, then one of
-        ``SLAP`` / ``PET`` / ``NEUTRAL`` on every subsequent call (the buffer
-        slides, always reflecting the most recent ``window`` frames).
+        ``result.detections`` is this frame's hand boxes (a list, possibly empty;
+        each entry has a ``"bbox"`` of ``(x1, y1, x2, y2)`` in pixels). It is
+        returned on every call, including while stalling.
+
+        ``result.decision`` is ``STALL`` until ``window`` frames have been
+        buffered, then one of ``SLAP_LEFT`` / ``SLAP_RIGHT`` / ``PET`` /
+        ``NEUTRAL`` on every subsequent call (the buffer slides, always
+        reflecting the most recent ``window`` frames).
         """
-        self._buffer.append(self.detector.detect(image))
+        detections = self.detector.detect(image)
+        self._buffer.append(detections)
         if len(self._buffer) < self.window:
-            return STALL
-        return classify_from_detections(list(self._buffer))
+            decision = STALL
+        else:
+            decision = classify_from_detections(list(self._buffer))
+        return GestureResult(decision, detections)
 
     def reset(self):
         """Clear the buffer (next decisions STALL until it refills)."""
