@@ -48,7 +48,7 @@ GestureResult = namedtuple("GestureResult", ["decision", "detections"])
 DETECTOR_BACKEND = "mediapipe"        # default detector backend
 CAPTURE_FPS = 30                      # frames sampled into a bundle per second
 FRAMES_PER_BATCH = 30                 # bundle / window size (~1s of motion)
-CAPTURE_WIDTH, CAPTURE_HEIGHT = 1280, 720
+CAPTURE_WIDTH, CAPTURE_HEIGHT = 640, 480
 
 # --- Movement decision tuning ---
 # Movement is measured in "hand-widths" (the per-track sweep divided by the
@@ -59,7 +59,7 @@ CAPTURE_WIDTH, CAPTURE_HEIGHT = 1280, 720
 # movement spanning only a few frames still counts.
 MOVE_THRESHOLD = 0.8      # min sweep (hand-widths) to count as a gesture
 MIN_TRACK_FRAMES = 3      # a track needs >= this many detections to be scored
-MAX_JUMP_FACTOR = 2.5     # nearest-center association gate (x hand size)
+MAX_JUMP_FACTOR = 3.5     # nearest-center association gate (x hand size)
 
 
 # ----------------------------------------------------------------------------

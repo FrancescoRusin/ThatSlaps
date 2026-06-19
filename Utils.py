@@ -5,7 +5,7 @@ import sdl2.ext
 import sdl2.sdlttf
 
 FRAMERATE: int = 30
-MAX_TRIALS: int = 20
+MAX_TRIALS: int = 10
 CHOICE_SECONDS: int = 4
 
 
