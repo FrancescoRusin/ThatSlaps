@@ -29,7 +29,7 @@ if __name__ == "__main__":
     factory = sdl2.ext.SpriteFactory(renderer=renderer)
     sprite_factory = factory.create_sprite_render_system(window)
 
-    font = sdl2.sdlttf.TTF_OpenFont(b"./fonts/Roboto-Regular.ttf", 500)
+    font = sdl2.sdlttf.TTF_OpenFont(b"./fonts/Super Pandora.ttf", 500)
 
     webcam = cv2.VideoCapture(0)
     success, image = webcam.read()
@@ -97,7 +97,9 @@ if __name__ == "__main__":
                                     [sdl2.SDL_Rect(200 * i, 400, 200, 200) for i in range(1, 9)] +
                                     [sdl2.SDL_Rect(200 * i, 600, 200, 200) for i in range(1, 9)])
     random.shuffle(available_bg_positions)
-    sprite_museum: list = [(random.choice(sprites)[1], random.choice(available_bg_positions)) for _ in range(3)]
+    sprite_museum: list = [(random.choice(sprites)[1], pos) for pos in random.sample(available_bg_positions, 3)]
+    for _, pos in sprite_museum:
+        available_bg_positions.remove(pos)
     start_time: int = time_int()
     while running and trials < MAX_TRIALS and False:
         renderer.color = red
@@ -133,8 +135,16 @@ if __name__ == "__main__":
             for sprite, position in sprite_museum:
                 sdl2.SDL_SetTextureAlphaMod(sprite.texture, int(255 * (.3 + abs(.3 - (timestamp - start_time) / 1000))))
         sdl2.SDL_RenderCopy(renderer.sdlrenderer, sprite_background.texture, None, background_rect)
+        percentage: float = (timestamp - start_time) / 1000
         for i in range(len(sprite_museum)):
-            sdl2.SDL_RenderCopy(renderer.sdlrenderer, sprite_museum[i][0].texture, None, sprite_museum[i][1])
+            if (game_mode == Mode.CONSEQUENCE and
+                    ((current_target == Target.CUTE and chosen_action == Action.PET) or (current_target == Target.DANGER and chosen_action == Action.NOTHING)) and
+                    percentage < 1):
+                current_rect = sdl2.SDL_Rect(sprite_museum[i][1].x, sprite_museum[i][1].y - int(60 * percentage * (1 - percentage)),
+                                             sprite_museum[i][1].w, sprite_museum[i][1].h)
+                sdl2.SDL_RenderCopy(renderer.sdlrenderer, sprite_museum[i][0].texture, None, current_rect)
+            else:
+                sdl2.SDL_RenderCopy(renderer.sdlrenderer, sprite_museum[i][0].texture, None, sprite_museum[i][1])
         sdl2.SDL_UpdateTexture(webcam_texture, None, image.ctypes.data, width * 3)
         sdl2.SDL_RenderCopy(renderer.sdlrenderer, webcam_texture, None, webcam_rect)
         if game_mode == Mode.LOAD:
@@ -265,32 +275,38 @@ if __name__ == "__main__":
                 time.sleep((1000 / FRAMERATE - current_tick + prev_tick) / 1000)
             renderer.present()
             prev_tick = time_int()
-    # sdl2.SDL_SetTextureAlphaMod(sprite_background.texture, 255)
-    # for sprite, position in sprite_museum:
-    #     sdl2.SDL_SetTextureAlphaMod(sprite.texture, 255)
-    # jump_x: list[int] = [0 for _ in sprite_museum]
-    # time.sleep(.5)
-    # while running:
-    #     if should_close():
-    #         running = False
-    #         break
-    #     sdl2.SDL_RenderClear(renderer.sdlrenderer)
-    #     sdl2.SDL_RenderCopy(renderer.sdlrenderer, sprite_background.texture, None, background_rect)
-    #     for sprite, position in sprite_museum:
-    #         sdl2.SDL_RenderCopy(renderer.sdlrenderer, sprite.texture, None, position)
-    #     # for i in range(len(jump_x)):
-    #     #     if jump_x[i] == 0 and random.randint(1, 100) == 100:
-    #     #         jump_x[i] = 30
-    #     #     current_rect = sdl2.SDL_Rect(sprite_museum[i][1].x, sprite_museum[i][1].y - int(jump_x[i] * (1 - jump_x[i] / 30)),
-    #     #                                  sprite_museum[i][1].w, sprite_museum[i][1].h)
-    #     #     if jump_x[i] > 0:
-    #     #         jump_x[i] -= 1
-    #     #     sdl2.SDL_RenderCopy(renderer.sdlrenderer, sprite_museum[i][0].texture, None, current_rect)
-    #         current_tick: int = time_int()
-    #         if (current_tick - prev_tick) * FRAMERATE < 1000:
-    #             time.sleep((1000 / FRAMERATE - current_tick + prev_tick) / 1000)
-    #         renderer.present()
-    #         prev_tick = time_int()
+    sdl2.SDL_SetTextureAlphaMod(sprite_background.texture, 255)
+    for sprite, position in sprite_museum:
+        sdl2.SDL_SetTextureAlphaMod(sprite.texture, 255)
+    jump_x: list[int] = [0 for _ in sprite_museum]
+    text_surface = sdl2.sdlttf.TTF_RenderUTF8_Blended(font, f"FINAL SCORE: {len(sprite_museum)} cheerers!".encode("utf-8"), white)
+    result_texture = sdl2.SDL_CreateTextureFromSurface(renderer.sdlrenderer, text_surface)
+    result_rect = sdl2.SDL_Rect(50, 50, 1820, 100)
+    sdl2.SDL_FreeSurface(text_surface)
+    time.sleep(.5)
+    if len(sprite_museum) == 0:
+        evil_sprites = list(map(lambda t: t[1], filter(lambda s: s[2] == Target.UGLY, sprites)))
+        sprite_museum = [(random.choice(evil_sprites), pos) for pos in available_bg_positions]
+    while running:
+        if should_close():
+            running = False
+            break
+        sdl2.SDL_RenderClear(renderer.sdlrenderer)
+        sdl2.SDL_RenderCopy(renderer.sdlrenderer, sprite_background.texture, None, background_rect)
+        sdl2.SDL_RenderCopy(renderer.sdlrenderer, result_texture, None, result_rect)
+        for i in range(len(jump_x)):
+            if jump_x[i] == 0 and random.randint(1, 100) == 60:
+                jump_x[i] = 30
+            current_rect = sdl2.SDL_Rect(sprite_museum[i][1].x, sprite_museum[i][1].y - 10 * int(jump_x[i] * (1 - jump_x[i] / 30)),
+                                         sprite_museum[i][1].w, sprite_museum[i][1].h)
+            if jump_x[i] > 0:
+                jump_x[i] -= 1
+            sdl2.SDL_RenderCopy(renderer.sdlrenderer, sprite_museum[i][0].texture, None, current_rect)
+        current_tick: int = time_int()
+        if (current_tick - prev_tick) * FRAMERATE < 1000:
+            time.sleep((1000 / FRAMERATE - current_tick + prev_tick) / 1000)
+        renderer.present()
+        prev_tick = time_int()
     slap_checker.shutdown()
     sdl2.sdlttf.TTF_CloseFont(font)
     sdl2.sdlttf.TTF_Quit()

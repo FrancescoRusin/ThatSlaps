@@ -5,7 +5,10 @@ import time
 import numpy
 from mediapipe.tasks.python.components.containers.landmark import NormalizedLandmark
 
-from Utils import Action, time_int
+from Utils import Action
+
+
+CACHE_SIZE = 10
 
 
 @dataclass
@@ -50,19 +53,19 @@ class SlapTracker:
                     thumb=(landmarks[4].x, landmarks[4].y, landmarks[4].z)
                 )
             )
-        if len(self.archive) > 20:
+        if len(self.archive) > CACHE_SIZE:
             self.archive.pop(0)
         else:
             return Action.NOTHING
         centers_x: list[float] = [p.center[0] for p in self.archive]
         centers_y: list[float] = [p.center[1] for p in self.archive]
         if numpy.std(centers_y) < 0.1:
-            if all([x <= .45 for x in centers_x[:10]]) and all([x >= .55 for x in centers_x[10:]]):
+            if all([x <= .45 for x in centers_x[:CACHE_SIZE // 2]]) and all([x >= .55 for x in centers_x[CACHE_SIZE // 2:]]):
                 return Action.SLAP_RIGHT
-            if all([x >= .55 for x in centers_x[:10]]) and all([x <= .45 for x in centers_x[10:]]):
+            if all([x >= .55 for x in centers_x[:CACHE_SIZE // 2]]) and all([x <= .45 for x in centers_x[CACHE_SIZE // 2:]]):
                 return Action.SLAP_LEFT
-        elif numpy.std(centers_x) < 0.1:
-            if all([y <= .45 for y in centers_y[:10]]) and all([y >= .55 for y in centers_y[10:]]):
+        elif numpy.std(centers_x) < 0.2:
+            if all([y <= .5 for y in centers_y[:CACHE_SIZE // 2]]) and all([y >= .5 for y in centers_y[CACHE_SIZE // 2:]]):
                 return Action.PET
         return Action.NOTHING
 
