@@ -180,7 +180,7 @@ if __name__ == "__main__":
         (factory.from_image("images/duck_good.png"), factory.from_image("images/duck_silhouette.png"), Target.CUTE, happy_duck_sound),
         (factory.from_image("images/Hedgehog_NoTouch.png"), factory.from_image("images/Hedgehog_YesTouch.png"), Target.DANGER, happy_hedgehog_sound)
     ]
-    for s1, s2, t in sprites:
+    for s1, s2, _, _ in sprites:
         sdl2.SDL_SetTextureBlendMode(s1.texture, sdl2.SDL_BLENDMODE_BLEND)
         sdl2.SDL_SetTextureBlendMode(s2.texture, sdl2.SDL_BLENDMODE_BLEND)
     current_sprite, current_bg_sprite, current_target, target_sound = random.choice(sprites)
