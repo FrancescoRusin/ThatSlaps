@@ -97,11 +97,11 @@ if __name__ == "__main__":
                                     [sdl2.SDL_Rect(200 * i, 400, 200, 200) for i in range(1, 9)] +
                                     [sdl2.SDL_Rect(200 * i, 600, 200, 200) for i in range(1, 9)])
     random.shuffle(available_bg_positions)
-    sprite_museum: list = [(random.choice(sprites)[1], pos) for pos in random.sample(available_bg_positions, 3)]
+    sprite_museum: list = []
     for _, pos in sprite_museum:
         available_bg_positions.remove(pos)
     start_time: int = time_int()
-    while running and trials < MAX_TRIALS and False:
+    while running and trials < MAX_TRIALS:
         renderer.color = red
         renderer.clear()
         # if should_close():
@@ -287,6 +287,7 @@ if __name__ == "__main__":
     if len(sprite_museum) == 0:
         evil_sprites = list(map(lambda t: t[1], filter(lambda s: s[2] == Target.UGLY, sprites)))
         sprite_museum = [(random.choice(evil_sprites), pos) for pos in available_bg_positions]
+    sprite_museum.sort(key=lambda t: (t[1][1], t[1][0]))
     while running:
         if should_close():
             running = False
