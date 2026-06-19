@@ -32,12 +32,12 @@ if __name__ == "__main__":
 
     font = sdl2.sdlttf.TTF_OpenFont(b"fonts/Super Pandora.ttf", 500)
 
-    chomp_sound = sdl2.sdlmixer.Mix_LoadWAV(b"sounds/chomp.wav")
-    happy_capybara_sound = sdl2.sdlmixer.Mix_LoadWAV(b"sounds/happy capybara.wav")
-    happy_cat_sound = sdl2.sdlmixer.Mix_LoadWAV(b"sounds/happy cat.wav")
-    happy_duck_sound = sdl2.sdlmixer.Mix_LoadWAV(b"sounds/happy duck.wav")
-    happy_hedgehog_sound = sdl2.sdlmixer.Mix_LoadWAV(b"sounds/happy hedgehog.wav")
-    slap_sound = sdl2.sdlmixer.Mix_LoadWAV(b"sounds/slap.wav")
+    chomp_sound = sdl2.sdlmixer.Mix_LoadWAV(b"Sfx/chomp.wav")
+    happy_capybara_sound = sdl2.sdlmixer.Mix_LoadWAV(b"Sfx/happy capybara.wav")
+    happy_cat_sound = sdl2.sdlmixer.Mix_LoadWAV(b"Sfx/happy cat.wav")
+    happy_duck_sound = sdl2.sdlmixer.Mix_LoadWAV(b"Sfx/happy duck.wav")
+    happy_hedgehog_sound = sdl2.sdlmixer.Mix_LoadWAV(b"Sfx/hedgehog thanks.wav")
+    slap_sound = sdl2.sdlmixer.Mix_LoadWAV(b"Sfx/slap.wav")
 
     webcam = cv2.VideoCapture(0)
     success, image = webcam.read()
@@ -168,7 +168,6 @@ if __name__ == "__main__":
         text_surface = sdl2.sdlttf.TTF_RenderUTF8_Blended(font, f"{n}".encode("utf-8"), white)
         timer_textures.append(sdl2.SDL_CreateTextureFromSurface(renderer.sdlrenderer, text_surface))
         sdl2.SDL_FreeSurface(text_surface)
-    sdl2.SDL_DestroyTexture(background_texture.texture)
     background_texture = factory.from_image("images/Arena-01.png")
     sdl2.SDL_SetTextureBlendMode(background_texture.texture, sdl2.SDL_BLENDMODE_BLEND)
     sprites = [
@@ -180,6 +179,10 @@ if __name__ == "__main__":
         (factory.from_image("images/duck_good.png"), factory.from_image("images/duck_silhouette.png"), Target.CUTE, happy_duck_sound),
         (factory.from_image("images/Hedgehog_NoTouch.png"), factory.from_image("images/Hedgehog_YesTouch.png"), Target.DANGER, happy_hedgehog_sound)
     ]
+    explosion_animation = []
+    for i in range(28):
+        #explosion_animation.append(factory.from_image(f"images/poof_{i}.png"))
+        explosion_animation.append(factory.from_image(f"images/Testing/Doge_inv.png"))
     for s1, s2, _, _ in sprites:
         sdl2.SDL_SetTextureBlendMode(s1.texture, sdl2.SDL_BLENDMODE_BLEND)
         sdl2.SDL_SetTextureBlendMode(s2.texture, sdl2.SDL_BLENDMODE_BLEND)
@@ -318,6 +321,7 @@ if __name__ == "__main__":
                 if current_target == Target.UGLY and (chosen_action == Action.NOTHING or chosen_action == Action.PET) and len(sprite_museum) > 0:
                     sdl2.SDL_SetTextureAlphaMod(current_bg_sprite.texture, int(255 * percentage))
                     sdl2.SDL_RenderCopy(renderer.sdlrenderer, current_bg_sprite.texture, None, sprite_museum[-1][1])
+                    sdl2.SDL_RenderCopy(renderer.sdlrenderer, explosion_animation[int(percentage * 28)].texture, None, sprite_museum[-1][1])
                 elif chosen_action == Action.NOTHING and current_target != Target.DANGER:
                     sdl2.SDL_SetTextureAlphaMod(current_sprite.texture, 255 - int(255 * percentage))
                     sdl2.SDL_RenderCopy(renderer.sdlrenderer, current_sprite.texture, None, image_rect)

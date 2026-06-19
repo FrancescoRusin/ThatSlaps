@@ -61,7 +61,7 @@ class MediaPipeHandDetector:
 
         options = vision.HandLandmarkerOptions(
             base_options=mp_python.BaseOptions(model_asset_path=model_path),
-            running_mode=vision.RunningMode.IMAGE,
+            running_mode=vision.RunningMode.VIDEO,
             num_hands=max_hands,
             min_hand_detection_confidence=min_conf,
             min_hand_presence_confidence=min_conf,
