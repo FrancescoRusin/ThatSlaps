@@ -59,7 +59,7 @@ CAPTURE_WIDTH, CAPTURE_HEIGHT = 640, 480
 # movement spanning only a few frames still counts.
 MOVE_THRESHOLD = 0.8      # min sweep (hand-widths) to count as a gesture
 MIN_TRACK_FRAMES = 3      # a track needs >= this many detections to be scored
-MAX_JUMP_FACTOR = 3.5     # nearest-center association gate (x hand size)
+MAX_JUMP_FACTOR = 2.5     # nearest-center association gate (x hand size)
 
 
 # ----------------------------------------------------------------------------
