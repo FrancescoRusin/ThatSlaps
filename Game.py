@@ -73,11 +73,6 @@ if __name__ == "__main__":
         text_surface = sdl2.sdlttf.TTF_RenderUTF8_Blended(font, f"{n}".encode("utf-8"), white)
         timer_textures.append(sdl2.SDL_CreateTextureFromSurface(renderer.sdlrenderer, text_surface))
         sdl2.SDL_FreeSurface(text_surface)
-    actions_textures = {}
-    for a in Action:
-        text_surface = sdl2.sdlttf.TTF_RenderUTF8_Blended(font, f"{a}".encode("utf-8"), white)
-        actions_textures[a.value] = sdl2.SDL_CreateTextureFromSurface(renderer.sdlrenderer, text_surface)
-        sdl2.SDL_FreeSurface(text_surface)
     sprite_background = factory.from_image("images/Arena-01.png")
     sdl2.SDL_SetTextureBlendMode(sprite_background.texture, sdl2.SDL_BLENDMODE_BLEND)
     sprites = [
@@ -198,7 +193,6 @@ if __name__ == "__main__":
                     start_time = timestamp
 
         elif game_mode == Mode.CONSEQUENCE:
-            sdl2.SDL_RenderCopy(renderer.sdlrenderer, actions_textures[chosen_action.value], None, sdl2.SDL_Rect(50, 50, 1870, 100))
             if timestamp - start_time >= 1000:
                 if (current_target == Target.CUTE and chosen_action == Action.PET) or (current_target == Target.DANGER and chosen_action == Action.NOTHING):
                     chosen_position = available_bg_positions.pop(-1)
