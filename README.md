@@ -1,21 +1,29 @@
 # That Slaps!
 ![](images/ThatSlaps.png)
 ## Game Overview:
-That slaps is a fast paced game where you need to let the cute creatures into the stadium and slap evil dopplegangers away, all with simple ai motion controls. Make a quick decision, and don't touch the hedgehog!
+That Slaps is a fast paced game where you need to let the cute creatures into the stadium and slap evil dopplegangers away, all with simple AI motion controls. Make a quick decision, and don't touch the hedgehog!
 
 ### How to play:
-Move your hand horizontally to slap dopplegangers
-<p><img src="images/capybara_evil.png" alt="Logo" width="100"><img src="images/cat_evil.png" alt="Logo" width="100"><img src="images/duck_evil.png" alt="Logo" width="100"></p>
-
-and vertically to pet the creatures
+Move your hand vertically to pet the creatures
 <p><img src="images/capybara_good.png" alt="Logo" width="100"><img src="images/cat_good.png" alt="Logo" width="100"><img src="images/duck_good.png" alt="Logo" width="100"></p>
 
-Do not touch the hedgehog!
+and horizontally to slap the dopplegangers
+<p><img src="images/capybara_evil.png" alt="Logo" width="100"><img src="images/cat_evil.png" alt="Logo" width="100"><img src="images/duck_evil.png" alt="Logo" width="100"></p>
+
+do not touch the hedgehog!
 <p><img src="images/Hedgehog_NoTouch.png" alt="Logo" width="100">
 
 ## Details:
-The game is written in python3.14. It Uses media pipe to handle the hand tracking, and sdl2 for the rendering. All art was made by humans using sketchbook and the adobe suite.
-The applause sound comes from https://pixabay.com/sound-effects/search/applause/
+The game is written in Python 3.14. It uses Mediapipe to handle the hand tracking, and SDL2 for the rendering. All art was made by humans using a sketchbook and the Adobe suite.
+The applause sound comes from https://pixabay.com/sound-effects/search/applause/; all the other sounds were either taken from royalty free sites that do not require citations or produced directly by the team.
 
 ## How to run the game:
-install all libraries and run the Game.py file (webcam required)
+Install Python 3.14 and install the libraries pysdl2, pysdl2-dll, and mediapipe using pip; then you can run the Game.py file (webcam required).
+
+## Team
+The FiveGuys team is composed of:
++ [Francesco Rusin](https://github.com/FrancescoRusin>) (coding)
++ [Batuhan Ozcomlekci](https://github.com/bozcomlekci) (coding)
++ [Franziska Bönisch](https://github.com/Franziska04) (art)
++ [Leonardo Sorrentino](https://github.com/bipomao) (art)
++ [Ville-Veikko Uhlgren](https://github.com/khazaam) (art)
